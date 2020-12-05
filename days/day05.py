@@ -29,9 +29,20 @@ def seat_id_for(seat):
     col = COL[seat[7:]]
     return row * 8 + col
 
+
+def better_seat_id_for(seat):
+    n = 0
+    for c in seat:
+        n = n << 1
+        if c == 'B' or c == 'R':
+            n += 1
+    return n
+
+
 class TestToday(unittest.TestCase):
     def test_common(self):
         self.assertEqual(seat_id_for('FBFBBFFRLR'), 44*8+5)
+        self.assertEqual(better_seat_id_for('FBFBBFFRLR'), 44*8+5)
 
 
 def main():
@@ -41,8 +52,7 @@ def main():
         seats = []
         for line in fin:
             line = line.strip()
-            #seats.append(line)
-            id = seat_id_for(line)
+            id = better_seat_id_for(line)
             all_ids.append(id)
             if id > best:
                 best = id

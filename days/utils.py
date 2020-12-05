@@ -64,3 +64,18 @@ def read_grid(file):
         for line in fin:
             grid.append(line.strip())
     return grid
+
+
+def iter_line_groups(file):
+    with maybe_open(file) as fin:
+        group = []
+        for line in fin:
+            line = line.rstrip()
+            if line:
+                group.append(line)
+            else:
+                yield group
+                group = []
+
+        if group:
+            yield group

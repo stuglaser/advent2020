@@ -1,4 +1,6 @@
 .session
 .python-version
+.leaderboard
+.cached_leaderboard
 
 inputs/*

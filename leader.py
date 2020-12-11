@@ -78,13 +78,42 @@ def getargs():
     p = argparse.ArgumentParser()
     p.add_argument('--refresh', '-r', action='store_true')
     p.add_argument('--part', '-p', type=int, default=2, choices=(1, 2))
+    p.add_argument('--by-day', '-b', action='store_true')
     return p.parse_args()
+
+
+def show_by_day(board):
+    members = sorted(board['members'].keys(), key=int)
+    last_day = min(25, int(time.time() - START_STAMP) // (24*60*60) + 1)
+
+    INF = last_day + 10000
+    INF = 1607577361 + 99999999
+
+    for day in range (1, last_day + 1):
+        headers = [f'Day {day}', 'Part 1', 'Part 2']
+        data = []
+        for m in members:
+            name = (board['members'][m]['name'] or
+                    'anon' + board['members'][m]['id'])
+            data.append((name,
+                         lookup_completion(board, m, day, 1),
+                         lookup_completion(board, m, day, 2)))
+
+        data.sort(key=lambda d: (d[2] or INF, d[1] or INF))
+        t0 = day_start(day)
+        table = [(d[0], fmt_time(d[1] - t0) if d[1] else '', fmt_time(d[2] - t0) if d[2] else '')
+                 for d in data]
+        print(tabulate(table, headers=headers))
+        print()
 
 
 def main():
     args = getargs()
 
     board = get_leaderboard(force_refresh=args.refresh)
+    if args.by_day:
+        show_by_day(board)
+        return 0
 
     members = sorted(board['members'].keys(), key=int)
     last_day = min(25, int(time.time() - START_STAMP) // (24*60*60) + 1)
@@ -92,7 +121,9 @@ def main():
     headers = ['']
     for _ in range(2):
         for m in members:
-            headers.append(board['members'][m]['name'].split()[0])
+            name = (board['members'][m]['name'] or
+                    'anon' + board['members'][m]['id'])
+            headers.append(name.split()[0])
 
     table = []
     for day in range(1, last_day + 1):

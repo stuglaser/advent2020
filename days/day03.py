@@ -6,6 +6,8 @@ import itertools
 import unittest
 import sys
 
+from utils import Pt, read_grid
+
 INPUT = 'inputs/input03.txt'
 
 
@@ -31,6 +33,23 @@ def cnt_trees(map, offset):
     return cnt
 
 
+def cnt_trees2(map, offset):
+    W = len(map[0])
+
+    pos = Pt(0, 0)
+    cnt = 0
+    while True:
+        if pos[0] >= len(map):
+            break
+
+        if map[pos[0]][pos[1] % W] == '#':
+            cnt += 1
+
+        pos = pos + offset
+
+    return cnt
+
+
 def main():
     items = []
     map = []
@@ -41,7 +60,8 @@ def main():
         for line in fin:
             map.append(line.strip())
 
-    print('part 1: ', cnt_trees(map, (1, 3)))
+    print('part 1 old: ', cnt_trees(map, (1, 3)))
+    print('part 1: ', cnt_trees2(map, Pt(1, 3)))
 
     mul = 1
     for offset in [(1, 1), (1, 3), (1, 5), (1, 7), (2, 1)]:
@@ -50,6 +70,10 @@ def main():
     print('part 2:', mul)
 
     #print(map)
+
+    with open(INPUT, 'rb') as fin:
+        map = read_grid(fin)
+    print(map)
 
 if __name__ == '__main__':
     if len(sys.argv) > 1 and sys.argv[1] == 'test':

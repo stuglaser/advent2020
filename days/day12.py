@@ -77,11 +77,48 @@ def main():
             for _ in range(amount):
                 ship = ship + pt
         elif go == 'L':
-            for _ in range(amount // 90):
-                pt = Pt(-pt.y, pt.x)
+            # for _ in range(amount // 90):
+            #     pt = Pt(-pt.y, pt.x)
+            pt = pt.rot90(amount // 90)
         elif go == 'R':
-            for _ in range(amount // 90):
-                pt = Pt(pt.y, -pt.x)
+            # for _ in range(amount // 90):
+            #     pt = Pt(pt.y, -pt.x)
+            pt = pt.rot90(-amount // 90)
+
+    print('Part 2: ', abs(ship.x) + abs(ship.y))
+
+
+    ### Redoing with better Pt class
+
+
+    pt = Pt(0, 0)
+    facing = 'E'
+    for cmd in commands:
+        go, amount = cmd[0], int(cmd[1:])
+        if go in 'NESW':
+            pt = pt + amount * Pt.in_direction(go)
+        elif go == 'F':
+            pt = pt + amount * Pt.in_direction(facing)
+        elif go == 'L':
+            facing = left_of(facing, amount // 90)
+        elif go == 'R':
+            facing = right_of(facing, amount // 90)
+
+    print('part 1:', abs(pt.x) + abs(pt.y))
+
+
+    ship = Pt(0, 0)
+    pt = Pt(10, 1)
+    for cmd in commands:
+        go, amount = cmd[0], int(cmd[1:])
+        if go in 'NESW':
+            pt = pt + amount * Pt.in_direction(go)
+        elif go == 'F':
+            ship = ship + amount * pt
+        elif go == 'L':
+            pt = pt.rot90(amount // 90)
+        elif go == 'R':
+            pt = pt.rot90(-amount // 90)
 
     print('Part 2: ', abs(ship.x) + abs(ship.y))
 

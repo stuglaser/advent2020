@@ -27,6 +27,16 @@ class Pt:
         self.y += other.y
         return self
 
+    def __mul__(self, value):
+        return Pt(self.x * value, self.y * value)
+
+    __rmul__ = __mul__
+
+    def __imul__(self, value):
+        self.x *= value
+        self.y *= value
+        return self
+
     def __eq__(self, other):
         return self.x == other.x and self.y == other.y
 
@@ -48,6 +58,50 @@ class Pt:
 
     def as_tuple(self):
         return (self.x, self.y)
+
+    def rot90(self, increments):
+        """Returns rotated by 90 degree increments."""
+        pt = Pt(self.x, self.y)
+        increments = increments % 4
+        # Just hardcoding all 4
+        if increments == 0:
+            return self.clone()
+        elif increments == 1:
+            return Pt(-self.y, self.x)
+        elif increments == 2:
+            return Pt(-self.x, -self.y)
+        elif increments == 3:
+            return Pt(self.y, -self.x)
+
+        raise Exception('Not reachable?')
+
+    def l1dist(self):
+        return abs(self.x) + abs(self.y)
+
+    @classmethod
+    def in_direction(cls, direction):
+        if direction == 'E':
+            return Pt(1, 0)
+        elif direction == 'N':
+            return Pt(0, 1)
+        elif direction == 'W':
+            return Pt(-1, 0)
+        elif direction == 'S':
+            return Pt(0, -1)
+
+        raise ValueError('Cannot give a point in direction: ' + direction)
+
+
+DIRECTIONS = ['E', 'N', 'W', 'S']
+IDX_OF_DIRECTION = {d: idx for idx, d in enumerate(DIRECTIONS)}
+
+
+def left_of(direction, increment=1):
+    return DIRECTIONS[(IDX_OF_DIRECTION[direction] + increment) % 4]
+
+
+def right_of(direction, increment=1):
+    return DIRECTIONS[(IDX_OF_DIRECTION[direction] - increment) % 4]
 
 
 def read_grid_numpy(fin):

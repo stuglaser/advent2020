@@ -104,6 +104,18 @@ def right_of(direction, increment=1):
     return DIRECTIONS[(IDX_OF_DIRECTION[direction] - increment) % 4]
 
 
+def gcd(a, b):
+    if b > a:
+        a, b = b, a
+    if b == 0: return a
+
+    return gcd(b, a % b)
+
+
+def lcm(a, b):
+    return a * b // gcd(a, b)
+
+
 def read_grid_numpy(fin):
     import numpy as np
     rows = []

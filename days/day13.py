@@ -17,19 +17,6 @@ class TestToday(unittest.TestCase):
         pass
 
 
-def gcd(a, b):
-    if b > a:
-        a, b = b, a
-    if b == 0: return a
-
-    return gcd(b, a % b)
-
-
-def lcm(a, b):
-    return a * b // gcd(a, b)
-
-
-
 def main():
     with open(INPUT, 'r') as fin:
         lines = [line.rstrip() for line in fin]
@@ -47,63 +34,35 @@ def main():
     # 174, bus 29, waiting 6 minutes
 
 
+    print('\n\n\n')
+
     departs = [None if x == 'x' else int(x) for x in lines[1].split(',')]
-
-    # start = 0
-    # while True:
-
-    #     ok = True
-    #     for j in range(1, len(departs)):
-    #         if departs[j] is not None:
-    #             # departs[j] must depart at (start + j)
-    #             if (start + j) % departs[j] == 0:
-    #                 pass # ok
-    #             else:
-    #                 ok = False
-    #                 break
-
-    #     if ok:
-    #         print('Done!', start)
-
-    #     start += departs[0]
-
-    valids = []
+    valids = []  # departs[valids[i]] is a real bus
     for i, x in enumerate(departs):
         if x is not None:
             valids.append(i)
 
 
-    print('A check in offsetting assumptions')
-    print('\n\n\n')
-
-
-    # base + k * increment == the valid times for all previous busses
+    # base + k * increment == the valid times for all previous buses
     base = valids[0]
     increment = departs[base]
-    for i in range(1, len(valids)):
-        # The offsets
-        a = valids[i - 1]
-        b = valids[i]
-        x1 = departs[a]
-        x2 = departs[b]
-
+    for idx in valids[1:]:
         print()
-        print(f'From base = {base} +{increment} ...  with l*{x2} reaching t+{b}')
+        print(f'From {base} + k * {increment}, solving for l * {bus} ~ t + {idx}')
+        bus = departs[idx]
 
         k = 1
         while True:
-            #if ((k * increment) - base) % x2 == (x2 - b):
-            print(f'   check {base} + {k} * {increment} + {b} % {x2} = {base + k * increment + b} % {x2} = {(base + k * increment + b) % x2}')
-            if (base + k * increment + b) % x2 == 0:
+            if (base + k * increment + idx) % bus == 0:
                 break
             k += 1
         t = base + k * increment
-        print(f'Found t = {base} + {k} * {increment} = {t}     (({t} + {b}) % {x2} = {(t + b) % x2})')
+        print(f'Found t = {base} + {k} * {increment} = {t}     (({t} + {idx}) % {bus} = {(t + idx) % bus})')
 
         base = k * increment + base
-        increment = lcm(increment, x2)
+        increment = lcm(increment, bus)
 
-    t = base #+ increment
+    t = base
     print()
     print('part 2 =', t)
     print('Final check')

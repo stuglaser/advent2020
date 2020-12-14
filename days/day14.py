@@ -13,10 +13,6 @@ INPUT = 'inputs/input14.txt'
 #INPUT='TEMP'
 
 
-def lpad(s, ll):
-    return ('0' * (ll - len(s))) + s
-
-
 class TestToday(unittest.TestCase):
     def test_common(self):
         pass
@@ -48,8 +44,6 @@ def main():
                     throughmask += 1
 
                 mask = mask[1:]
-
-            print('Mask', origmask, '  gives setval ', bin(setval), ' and throughmask', bin(throughmask))
         else:
             assert line.startswith('mem')
             bits = line.split('=')
@@ -58,65 +52,41 @@ def main():
 
             existing = mem.get(addr, 0)
             mem[addr] = (val & throughmask) | setval
-            print(f'Set mem[{addr}] = {bin(mem[addr])}')
+            #print(f'Set mem[{addr}] = {bin(mem[addr])}')
 
-    ss = 0
-    for k, v in mem.items():
-        ss += v
-    print('part 1: ', ss)
+    print('Part 1: ', sum(mem.values()))
 
+
+    # ==================== Part 2
 
     mem = {}
     for line in lines:
         if line.startswith('mask'):
             mask = line.split('=')[1].strip()
-            print('\nMask now: ', mask)
         else:
+            # Bad parsing code
             assert line.startswith('mem')
             bits = line.split('=')
             addr = int(bits[0][4:-2])
             val = int(bits[1].strip())
 
-
-            addr_bits = lpad(bin(addr)[2:], BW)
-            assert len(addr_bits) == len(mask), f'{addr_bits}  {mask}'
-            together = ''
-            for i in range(BW):
-                if mask[i] == '0':
-                    together += addr_bits[i]
-                elif mask[i] == '1':
-                    together += '1'
-                else:
-                    together += 'X'
-
-            print(f'Forming solution for {together}')
-            cntx = sum(1 for c in together if c == 'X')
+            # The X's are filled in from `k`
+            cntx = sum(1 for c in mask if c == 'X')
             for k in range(2**cntx):
-                k_bits = lpad(bin(k)[2:], cntx)
-                k_idx = 0
-                print(f'for k = {k} = {k_bits}')
+                realaddr = 0
+                for b in range(BW):
+                    m = mask[BW - b - 1]
+                    if m == '0':
+                        realaddr += addr & (1 << b)
+                    elif m == '1':
+                        realaddr += 1 << b
+                    else: # X
+                        realaddr += (k & 1) << b
+                        k = k >> 1
 
-                realaddr_bits = ''
-                for i in range(BW):
-                    if together[i] == 'X':
-                        realaddr_bits += k_bits[k_idx]
-                        k_idx += 1
-                    else:
-                        realaddr_bits += together[i]
-
-                realaddr = int(realaddr_bits, 2)
-                print(f'realaddr = {realaddr} = {bin(realaddr)}')
                 mem[realaddr] = val
 
-    ss = 0
-    for k, v in mem.items():
-        ss += v
-    print('part 2: ', ss)
-
-
-
-
-
+    print('Part 2: ', sum(mem.values()))
 
 
 if __name__ == '__main__':

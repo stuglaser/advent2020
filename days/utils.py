@@ -145,3 +145,26 @@ def iter_line_groups(file):
 
         if group:
             yield group
+
+
+def pad_array(arr):
+    import numpy as np
+    # Should we pad the bottom/top of the array?
+    pad_lo = [False for _ in arr.shape]
+    pad_hi = [False for _ in arr.shape]
+    for n in range(arr.ndim):
+        lo_slice = tuple(0 if i == n else None for i in range(arr.ndim))
+        pad_lo[n] = np.sum(arr[lo_slice]) > 0
+
+        hi_slice = tuple(-1 if i == n else None for i in range(arr.ndim))
+        pad_hi[n] = np.sum(arr[hi_slice]) > 0
+
+    output_shape = [arr.shape[n] + pad_lo[n] + pad_hi[n]
+                    for n in range(arr.ndim)]
+    output = np.zeros(output_shape, dtype=arr.dtype)
+
+    # Where to place the input inside the output
+    set_rect = [slice(int(pad_lo[n]), -1 if pad_hi[n] else None)
+                for n in range(arr.ndim)]
+    output[tuple(set_rect)] = arr
+    return output

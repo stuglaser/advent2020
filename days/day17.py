@@ -3,6 +3,7 @@ from collections import deque
 from collections import namedtuple
 import enum
 import itertools
+from itertools import product
 import unittest
 import re
 import sys
@@ -24,28 +25,6 @@ def zeros(*args, **kwargs):
     return np.zeros(*args, **kwargs, dtype=np.int32)
 
 
-def pad_array(arr):
-    # Should we pad the bottom/top of the array?
-    pad_lo = [False for _ in arr.shape]
-    pad_hi = [False for _ in arr.shape]
-    for n in range(arr.ndim):
-        lo_slice = tuple(0 if i == n else None for i in range(arr.ndim))
-        pad_lo[n] = np.sum(arr[lo_slice]) > 0
-
-        hi_slice = tuple(-1 if i == n else None for i in range(arr.ndim))
-        pad_hi[n] = np.sum(arr[hi_slice]) > 0
-
-    output_shape = [arr.shape[n] + pad_lo[n] + pad_hi[n]
-                    for n in range(arr.ndim)]
-    output = np.zeros(output_shape, dtype=arr.dtype)
-
-    # Where to place the input inside the output
-    set_rect = [slice(int(pad_lo[n]), -1 if pad_hi[n] else None)
-                for n in range(arr.ndim)]
-    output[tuple(set_rect)] = arr
-    return output
-
-
 def arr_contains(arr, idx):
     for n in range(arr.ndim):
         if not (0 <= idx[n] < arr.shape[n]):
@@ -57,17 +36,10 @@ def arr_contains(arr, idx):
 def orthodiag_offsets(rank):
     offsets = np.zeros((3**rank - 1, rank), dtype=np.int32)
     i = 0
-    def fill(sofar):
-        nonlocal offsets, i
-        if len(sofar) == rank:
-            if not all(x == 0 for x in sofar):
-                offsets[i] = sofar
-                i += 1
-        else:
-            fill(sofar + [-1])
-            fill(sofar + [0])
-            fill(sofar + [1])
-    fill([])
+    for off in product(*[(-1, 0, 1) for _ in range(rank)]):
+        if not all(x == 0 for x in off):
+            offsets[i] = off
+            i += 1
     return offsets
 
 
@@ -91,30 +63,20 @@ def main():
         world = pad_array(world)
 
         next_world = world.copy()
-        for i in range(world.shape[0]):
-            for j in range(world.shape[1]):
-                for k in range(world.shape[2]):
-                    for l in range(world.shape[3]):
+        for i, j, k, l in product(*[range(n) for n in world.shape]):
+            # Neighbors
+            ncnt = (np.sum(world[max(i - 1, 0):i + 2,
+                                 max(j - 1, 0):j + 2,
+                                 max(k - 1, 0):k + 2,
+                                 max(l - 1, 0):l + 2])
+                    - world[i, j, k, l])
 
-                        ncnt = 0
-                        for ni in (i - 1, i, i + 1):
-                            for nj in (j - 1, j, j + 1):
-                                for nk in (k - 1, k, k + 1):
-                                    for nl in (l - 1, l, l + 1):
-                                        if ni == i and nj == j and nk == k and nl == l:
-                                            pass
-                                        elif (0 <= ni < world.shape[0] and
-                                              0 <= nj < world.shape[1] and
-                                              0 <= nk < world.shape[2] and
-                                              0 <= nl < world.shape[3]):
-                                            ncnt += world[ni, nj, nk, nl]
-
-                        if world[i,j,k,l]:
-                            if not (ncnt == 2 or ncnt == 3):
-                                next_world[i, j, k, l] = 0
-                        else:
-                            if ncnt == 3:
-                                next_world[i, j, k, l] = 1
+            if world[i,j,k,l]:
+                if not (ncnt == 2 or ncnt == 3):
+                    next_world[i, j, k, l] = 0
+            else:
+                if ncnt == 3:
+                    next_world[i, j, k, l] = 1
 
         world = next_world
         print('Ater', iteration + 1, 'cycle:', np.sum(world))

@@ -42,8 +42,33 @@ def pad_array(arr):
     # Where to place the input inside the output
     set_rect = [slice(int(pad_lo[n]), -1 if pad_hi[n] else None)
                 for n in range(arr.ndim)]
-    output[set_rect] = arr
+    output[tuple(set_rect)] = arr
     return output
+
+
+def arr_contains(arr, idx):
+    for n in range(arr.ndim):
+        if not (0 <= idx[n] < arr.shape[n]):
+            return False
+    return True
+
+
+# Offsets to neighbors. In 2d, these are 8-neighbors
+def orthodiag_offsets(rank):
+    offsets = np.zeros((3**rank - 1, rank), dtype=np.int32)
+    i = 0
+    def fill(sofar):
+        nonlocal offsets, i
+        if len(sofar) == rank:
+            if not all(x == 0 for x in sofar):
+                offsets[i] = sofar
+                i += 1
+        else:
+            fill(sofar + [-1])
+            fill(sofar + [0])
+            fill(sofar + [1])
+    fill([])
+    return offsets
 
 
 def main():
@@ -59,25 +84,10 @@ def main():
     print('START')
     print(world)
 
+    #offsets = orthodiag_offsets(4)
+
     for iteration in range(6):
         print('\n\n===== ', iteration)
-        # Pad
-        # if np.sum(world[0,:,:,:]) > 0:
-        #     world = np.concatenate([zeros([1, world.shape[1], world.shape[2], world.shape[3]]), world], axis=0)
-        # if np.sum(world[-1,:,:,:]) > 0:
-        #     world = np.concatenate([world, zeros([1, world.shape[1], world.shape[2], world.shape[3]])], axis=0)
-        # if np.sum(world[:,0,:,:]) > 0:
-        #     world = np.concatenate([zeros([world.shape[0], 1, world.shape[2], world.shape[3]]), world], axis=1)
-        # if np.sum(world[:,-1,:,:]) > 0:
-        #     world = np.concatenate([world, zeros([world.shape[0], 1, world.shape[2], world.shape[3]])], axis=1)
-        # if np.sum(world[:,:,0,:]) > 0:
-        #     world = np.concatenate([zeros([world.shape[0], world.shape[1], 1, world.shape[3]]), world], axis=2)
-        # if np.sum(world[:,:,-1,:]) > 0:
-        #     world = np.concatenate([world, zeros([world.shape[0], world.shape[1], 1, world.shape[3]])], axis=2)
-        # if np.sum(world[:,:,:,0]) > 0:
-        #     world = np.concatenate([zeros([world.shape[0], world.shape[1], world.shape[2], 1]), world], axis=3)
-        # if np.sum(world[:,:,:,-1]) > 0:
-        #     world = np.concatenate([world, zeros([world.shape[0], world.shape[1], world.shape[2], 1])], axis=3)
         world = pad_array(world)
 
         next_world = world.copy()
@@ -86,7 +96,6 @@ def main():
                 for k in range(world.shape[2]):
                     for l in range(world.shape[3]):
 
-                        # neighbors
                         ncnt = 0
                         for ni in (i - 1, i, i + 1):
                             for nj in (j - 1, j, j + 1):

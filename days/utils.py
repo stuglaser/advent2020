@@ -168,3 +168,47 @@ def pad_array(arr):
                 for n in range(arr.ndim)]
     output[tuple(set_rect)] = arr
     return output
+
+
+
+def parse_sexp(string):
+    return _parse_sexp_helper(_sexp_tokenize(string))
+
+
+_NON_SYMBOL_CHARS = '() '
+def _sexp_tokenize(string):
+    symbol_start = None
+    for i, c in enumerate(string):
+        if string[i] == '(' or string[i] == ')':
+            yield string[i]
+        elif string[i] == ' ':
+            pass
+        else: # Symbol character
+            if symbol_start is None:
+                # Starting a symbol
+                symbol_start = i
+
+            is_end = (i == len(string) - 1) or string[i + 1] in _NON_SYMBOL_CHARS
+            if is_end:
+                yield string[symbol_start:i + 1]
+                symbol_start = None
+
+
+def _parse_sexp_helper(tokens):
+    global level
+    # Modifies the tokens iterator
+    expr = []
+    try:
+        while True:
+            tok = next(tokens)
+            if tok == '(':
+                subexpr = _parse_sexp_helper(tokens)
+                expr.append(subexpr)
+            elif tok == ')':
+                return expr
+            else:  # Symbol
+                expr.append(tok)
+    except StopIteration:
+        pass
+
+    return expr

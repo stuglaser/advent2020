@@ -60,9 +60,21 @@ def find_monsters(canvas):
 
 TILE_SIZE = 10
 
-EdgeRef = namedtuple('EdgeRef', ['tile', 'side', 'flipped'])
-
 # Rotations are counter-clockwise steps of 90-degrees
+#
+# The tile edges are read out in a specific order/direction, which is around the
+# tile in a counter-clockwise direction.
+#
+#       <---------
+#     +------------+
+#  |  |            |  ^
+#  |  |            |  |
+#  |  |            |  |
+#  |  |            |  |
+#  |  |            |  |
+#  v  |            |  |
+#     +------------+
+#       ---------->
 
 
 def transpose_tile(tile):
@@ -79,6 +91,7 @@ def rotate_tile_once(tile):
     return new
 
 
+# Functions for reading out the tile edges
 def top_of_tile(tile):
     return tile[0]
 def right_of_tile(tile):
@@ -104,7 +117,7 @@ class Transform:
         return Cls(False, 0)
 
     def edge_of(self, edge, tile):
-        # The dump way
+        # The dumb way
         transformed = self.apply(tile)
         return EDGE_GETTERS[edge](transformed)
 
@@ -128,35 +141,44 @@ def main():
         tile_num = int(group[0].split()[1][:-1])
         tiles[tile_num] = group[1:]
 
+    # A placed tile. Tile number, and its transform
     Placement = namedtuple('Placement', ['tile', 'transform'])
 
     # Lookup the tiles by their edges
     #
     # The transform describes how to get the *top* edge to be the given string.
-    by_edge = {}  # {edge_str: [(tilenum, transform)]}
+    by_edge = {}  # {edge_str: [Placement]}
     for num, tile in tiles.items():
         for transpose in (False, True):
             for rot in range(4):
                 tr = Transform(transpose, rot)
-                by_edge.setdefault(tr.edge_of(TOP, tile), []).append(Placement(num, tr))
+                edge_str = tr.edge_of(TOP, tile)
+                by_edge.setdefault(edge_str, []).append(Placement(num, tr))
 
-    # for k, v in by_edge.items():
-    #     print(k, v)
+    # Part 1 things
+    tile_match_count = defaultdict(int)
+    for placements in by_edge.values():
+        if len(placements) == 2:
+            for plc in placements:
+                tile_match_count[plc.tile] += 1
+    corners = []
+    prod = 1
+    for tile, matches in tile_match_count.items():
+        if matches == 2 * 2:
+            corners.append(tile)
+            prod *= tile
+    print(f'Part 1: {prod}, because corners are {corners}')
+
+    # We can start with any tile
     first_tile = min(tiles.keys())
 
     layout = {}  # {(row, col) -> Placement}
     layout[Pt(0, 0)] = Placement(first_tile, Transform(False, 0))
     stack = [Pt(0, 0)]
     while stack:
-        #print('\n')
         center = stack.pop()
-        #print('CENTER', center)
         tilenum, tr = layout[center]
         tile = tiles[tilenum]
-
-        #print(f'At {center}, found {tilenum} transformed {tr}:')
-        #print('\n'.join(tr.apply(tile)))
-
 
         # Each edge of the current tile
         for edge in range(4):
@@ -165,26 +187,16 @@ def main():
                 # Pulls out the string for the edge we need to match
                 edge_str = tr.edge_of(edge, tile)
                 need = edge_str[::-1]
-                #print(f'  Trying to match edge {EDGE_STR[edge]}({edge}) against {need}')
 
                 # Tries to find a tile that matches
                 maybe_found = [plc for plc in by_edge[need] if plc.tile != tilenum]
                 if maybe_found:
                     found, = maybe_found
-                    #print(f'  Found: {found}')
-                    #print('Transformed, looks like:')
-                    #print('\n'.join(found.transform.apply(tiles[found.tile])))
-
-                    #print()
                     match_transform = found.transform.rotated(2 - edge)
-                    #print(f'Transformed to match and now we have {match_transform}:')
-                    #print('\n'.join(match_transform.apply(tiles[found.tile])))
-                    #print()
-
                     layout[match_loc] = Placement(found.tile, match_transform)
                     stack.append(match_loc)
 
-                #print()
+    # Tile locations are known now. Collects them into a grid
 
     row_min, row_max = minmax(pt.x for pt in layout.keys())
     col_min, col_max = minmax(pt.y for pt in layout.keys())
@@ -220,66 +232,6 @@ def main():
             print('\n\nChecking canvas at', tr)
             find_monsters(tr.apply(canvas))
 
-    return
-
-    # with open(INPUT, 'r') as fin:
-    #     lines = [line.rstrip() for line in fin]
-
-
-    edges = {}  # (str -> EdgeRef)
-    edges = defaultdict(list)
-    for num, tile in tiles.items():
-        edges[tile[0]].append(EdgeRef(num, TOP, False))
-        edges[tile[0][::-1]].append(EdgeRef(num, TOP, True))
-        edges[tile[-1]].append(EdgeRef(num, BOTTOM, False))
-        edges[tile[-1][::-1]].append(EdgeRef(num, BOTTOM, True))
-
-
-        left = ''
-        right = ''
-        for line in tile:
-            left += line[0:1]
-            right += line[-1:]
-
-        edges[left].append(EdgeRef(num, LEFT, False))
-        edges[left[::-1]].append(EdgeRef(num, LEFT, True))
-        edges[right].append(EdgeRef(num, RIGHT, False))
-        edges[right[::-1]].append(EdgeRef(num, RIGHT, True))
-
-    for k, v in edges.items():
-        print(k, v)
-
-    neighbors_for = {}  # tile -> EdgeRef
-    #for refs in edges.value():
-
-
-    #locations = {}  # tile -> location
-    neighbor_count = {}  # tile -> connections
-    for refs in edges.values():
-        assert len(refs) <= 2
-        if len(refs) == 2:
-            for r in refs:
-                neighbor_count[r.tile] = neighbor_count.get(r.tile, 0) + 1
-
-    pp = 1
-    corners = []
-    for tile, connections in neighbor_count.items():
-        if connections == 4:
-            print('CORNER', tile)
-            pp *= tile
-            corners.append(tile)
-    print('part 1', pp)
-
-    Placement = namedtuple('Placement', ['tile', 'transform'])
-    layout = {}  # {(row, col) -> Placement}
-
-    layout[Pt(0, 0)] = Placement(corners[0], Transform(False, False, 0))
-    tiles_used = set(corners[0])
-    stack = [Pt(0, 0)]
-    while stack:
-        center = stack.pop()
-
-        # Left
 
 if __name__ == '__main__':
     if len(sys.argv) > 1 and sys.argv[1] == 'test':

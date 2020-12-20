@@ -6,8 +6,24 @@ def maybe_open(path):
     if hasattr(path, 'read'):
         yield path
     else:
-        with open(path, 'rb') as fin:
+        with open(path, 'r') as fin:
             yield fin
+
+
+def minmax(lst):
+    lo = hi = None
+    for item in lst:
+        if lo == None:
+            lo = hi = item
+        else:
+            lo = min(lo, item)
+            hi = max(hi, item)
+
+    return lo, hi
+
+
+def heightwidth(image):
+    return len(image), len(image[0])
 
 
 class Pt:

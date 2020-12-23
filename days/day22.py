@@ -2,7 +2,7 @@
 from collections import deque
 from collections import namedtuple
 from collections import defaultdict
-import enum
+#import enum
 import itertools
 from itertools import product
 import unittest
@@ -28,38 +28,47 @@ def dprint(*args, **kwargs):
 last_decks = None
 level = 0
 game = 0
+all_results = {}
 def play(deck1, deck2):
+    global all_results
     global last_decks
     global level
     global game
     game += 1
 
-    indent = f'L{level:2}{"  " * level}G{game:4} ] '
+    input_tuples = (tuple(deck1), tuple(deck2))
+    try:
+        return all_results[input_tuples]
+    except KeyError:
+        pass
 
-    dprint(f'{indent}Starting level {level}')
-    dprint(f'{"  " * level}Deck 1: {deck1}')
-    dprint(f'{"  " * level}Deck 2: {deck2}')
-    prev_decks = { (tuple(deck1), tuple(deck2)) }
+    #indent = f'L{level:2}{"  " * level}G{game:4} ] '
+
+    # dprint(f'{indent}Starting level {level}')
+    # dprint(f'{"  " * level}Deck 1: {deck1}')
+    # dprint(f'{"  " * level}Deck 2: {deck2}')
+    prev_decks = { input_tuples }
     round = 0
     while deck1 and deck2:
         round += 1
-        dprint(f'{indent}Round {round}')
-        dprint(f'{indent}Round {round} Deck 1: {deck1}')
-        dprint(f'{indent}Round {round} Deck 2: {deck2}')
+        # dprint(f'{indent}Round {round}')
+        # dprint(f'{indent}Round {round} Deck 1: {deck1}')
+        # dprint(f'{indent}Round {round} Deck 2: {deck2}')
         top1, deck1 = deck1[0], deck1[1:]
         top2, deck2 = deck2[0], deck2[1:]
-        dprint(f'{indent}Round {round},  {top1} vs {top2}')
+        #dprint(f'{indent}Round {round},  {top1} vs {top2}')
 
         if len(deck1) >= top1 and len(deck2) >= top2:
             level += 1
             winner = play(deck1[:top1], deck2[:top2])
+            all_results[ (tuple(deck1[:top1]), tuple(deck2[:top2])) ] = winner
             level -= 1
         elif top1 > top2:
             winner = 1
         else:
             winner = 2
 
-        dprint(f'{indent}Round {round} winner is player {winner}')
+        #dprint(f'{indent}Round {round} winner is player {winner}')
         if winner == 1:
             deck1 = deck1 + [top1, top2]
         else:
